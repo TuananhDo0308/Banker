@@ -23,6 +23,7 @@ document.addEventListener('DOMContentLoaded', () => {
     requestNum3.value = 0;
     addData();
     selectbox.selectedIndex = 0; 
+    console.log(data[0]);
 });
 
 addButton.addEventListener('click', () => {
@@ -111,23 +112,116 @@ function addData() {
 
 function removeRow(index) {
     data.splice(index, 1);
+    updateIds(); // Cập nhật lại ID sau khi xóa
     addData();
 }
 
-function Banker() {
-    // Banker algorithm implementation here
+function updateIds() {
+    data.forEach((item, index) => {
+        item.id = 'P' + (index + 1);
+    });
 }
 
-run.addEventListener('click', () => {
-    let id = "";
-    let num1 = 0;
-    let num2 = 0;
-    let num3 = 0;
-    if (isRequest === true) {
-        id = selectbox.value;
-        num1 = parseInt(requestNum1.value, 10);
-        num2 = parseInt(requestNum2.value, 10);
-        num3 = parseInt(requestNum3.value, 10);
+/******************************************BANKER BEGIN*********************************************/
+
+function isSafe(available, max, allocation, need) {
+    const work = available.slice();
+    const finish = Array(max.length).fill(false);
+    const safeSequence = [];
+
+    const n = max.length;
+    const m = available.length;
+
+    while (true) {
+        let found = false;
+        for (let i = 0; i < n; i++) {
+            if (!finish[i]) {
+                let j;
+                for (j = 0; j < m; j++) {
+                    if (need[i][j] > work[j]) {
+                        break;
+                    }
+                }
+                if (j === m) {
+                    for (let k = 0; k < m; k++) {
+                        work[k] += allocation[i][k];
+                    }
+                    finish[i] = true;
+                    found = true;
+                    safeSequence.push(data[i].id);
+                }
+            }
+        }
+        if (!found) {
+            break;
+        }
     }
+
+    return {
+        isSafe: finish.every(f => f),
+        safeSequence
+    };
+}
+
+function Banker() {
+    const available = data[0].available.slice();
+    const max = data.map(p => p.max.slice());
+    const allocation = data.map(p => p.allocation.slice());
+    const need = data.map((p, i) => p.max.map((maxResource, j) => maxResource - p.allocation[j]));
+
+    if (isRequest) {
+        const processIndex = data.findIndex(p => p.id === selectbox.value);
+        const request = [parseInt(requestNum1.value), parseInt(requestNum2.value), parseInt(requestNum3.value)];
+
+        for (let i = 0; i < request.length; i++) {
+            if (request[i] > need[processIndex][i]) {
+                output.textContent = `Request exceeds maximum claim for ${selectbox.value}`;
+                return;
+            }
+            if (request[i] > available[i]) {
+                output.textContent = `Resources are not available for ${selectbox.value}`;
+                return;
+            }
+        }
+
+        for (let i = 0; i < request.length; i++) {
+            available[i] -= request[i];
+            allocation[processIndex][i] += request[i];
+            need[processIndex][i] -= request[i];
+        }
+
+        const result = isSafe(available, max, allocation, need);
+
+        if (result.isSafe) {
+            data[0].available = available;
+            data[processIndex].allocation = allocation[processIndex];
+            output.innerHTML = `Request is granted for ${selectbox.value}<br>Safe sequence: ${result.safeSequence.join(', ')}`;
+        } else {
+            output.textContent = `Request cannot be granted as it leaves the system in an unsafe state for ${selectbox.value}`;
+        }
+    } else {
+        const result = isSafe(available, max, allocation, need);
+        if (result.isSafe) {
+            output.innerHTML = `The system is in a safe state.<br>Safe sequence: ${result.safeSequence.join(', ')}`;
+        } else {
+            output.textContent = "The system is not in a safe state.";
+        }
+    }
+
+    printNeedTable(need);
+}
+
+function printNeedTable(need) {
+    let needTable = '<table><tr><th>Process</th><th>Need</th></tr>';
+    data.forEach((process, index) => {
+        needTable += `<tr><td>${process.id}</td><td>${need[index].join(', ')}</td></tr>`;
+    });
+    needTable += '</table>';
+    output.innerHTML += `<br><br>Need Table:<br>${needTable}`;
+}
+
+/******************************************BANKER END*********************************************/
+
+run.addEventListener('click', () => {
     Banker();
 });
