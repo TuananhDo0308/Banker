@@ -16,6 +16,7 @@ body {
     background-size:cover;
     background-position: center;
     background-repeat: no-repeat;
+    overflow: hidden;
 }
 
 .container {
@@ -45,12 +46,18 @@ body {
 .left_container {
     gap: 20px;
     min-width: 600px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: transparent transparent;
 }
 
 .right_container {
     min-width: 500px;
     border-radius: 20px;
     background-color: rgba(0, 0, 0, 0.7);
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: transparent transparent;
 }
 
 
@@ -290,4 +297,23 @@ input[type="number"]::-webkit-outer-spin-button {
 
 input[type="number"] {
     -moz-appearance: textfield;
+}
+
+option{
+    color: black;
+}
+
+.right_container table{
+    margin: 0px;
+    margin-top: 10px;
+    width: calc(100% - 40px);
+}
+
+.right_container .input_container{
+    height: auto;
+    max-height: calc(100vh - 300px);
+} 
+
+.contentAnswer{
+    margin: 15px;
 }
